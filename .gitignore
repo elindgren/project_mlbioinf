@@ -119,3 +119,6 @@ dmypy.json
 .history
 
 # End of https://www.gitignore.io/api/python,visualstudiocode
+
+./ml_data
+ml_data/*
