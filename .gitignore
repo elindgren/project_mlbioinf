@@ -118,7 +118,16 @@ dmypy.json
 # Ignore all local history of files
 .history
 
+# MacOS
+.DS_Store
+
 # End of https://www.gitignore.io/api/python,visualstudiocode
 
 ./ml_data
 ml_data/*
+
+# iqtree
+*.log
+*.gz
+*.bionj
+*.mldist
