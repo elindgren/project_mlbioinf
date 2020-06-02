@@ -1,69 +1,70 @@
+# Internal imports
 import os
+import random
+import pprint
+
+# External imports
+import numpy as np
 from tqdm import tqdm
 
-covid_samples = {
-    'NC_045512': 'China', 
-    'MT407649' : 'China',
-    'MT407654' : 'China',
-    'MT407658' : 'China',
-    'MT135043' : 'China',
-    'MT534303' : 'USA',
-    'MT534328' : 'USA',
-    'MT535498' : 'USA',
-    'MT536185' : 'USA',
-    'MT528605' : 'USA',
-    'MT525950' : 'Italy',
-    'MT527178' : 'Italy',
-    'MT527184' : 'Italy',
-    'MT528235' : 'Italy',
-    'MT528237' : 'Italy',
-    'MT270103' : 'Germany',
-    'MT270104' : 'Germany',
-    'MT270105' : 'Germany',
-    'MT270108' : 'Germany',
-    'MT270109' : 'Germany',
-    'MT483554' : 'India',
-    'MT483556' : 'India',
-    'MT483558' : 'India',
-    'MT483559' : 'India',
-    'MT483560' : 'India',
-    'LC547518' : 'Japan',
-    'LC547520' : 'Japan',
-    'LC547521' : 'Japan',
-    'LC547522' : 'Japan',
-    'LC547523' : 'Japan',
-}
+pp = pprint.PrettyPrinter(indent=4)
 
-mers_samples = {
-    'MN481964' : 'Saudi Arabia',
-    'MN481965' : 'Saudi Arabia',
-    'MN481966' : 'Saudi Arabia',
-    'MN481977' : 'Saudi Arabia',
-    'MN481985' : 'Saudi Arabia',
-    'MK039552' : 'Jordan',
-    'MK039553' : 'Jordan',
-    'MF000458' : 'Jordan',
-    'MF741826' : 'Jordan',
-    'MF741836' : 'Jordan',
-    'KT326819' : 'South Korea',
-    'KX034094' : 'South Korea',
-    'KX034096' : 'South Korea',
-    'KX034098' : 'South Korea',
-    'KT868866' : 'South Korea',
-    'KJ361499' : 'France',
-    'KJ361500' : 'France',
-    'KJ361501' : 'France',
-    'KJ361502' : 'France',
-    'KF745068' : 'France',
-    'MH822886' : 'United Kingdom',
-    'KM210277' : 'United Kingdom',
-    'KM210278' : 'United Kingdom',
-    'KM015348' : 'United Kingdom',
-    'KC667074' : 'United Kingdom',
-}
+covid_all_patients = {}
+covid_samples = {}
+
+mers_all_patiens = {}
+mers_samples = {}
+
+random.seed(1)
+Ncovid = 300 # Will probably be a few more than this - since the program loops through all categories before checking this condition
+Nmers = 300
 
 print('Covid')
 # Covid
+with open('ml_data/covid19.csv', 'r') as d:
+    for i, line in enumerate(d):
+        if i > 0:
+            sl = line.rstrip().split(',')
+            ID = sl[0]
+            country = sl[4]
+            if ':' in country:
+                country = country.split(':')[0]
+            if '"' in country:
+                country = country.split('"')[1]
+            if country == '':
+                country = 'N/A'
+            if not country in covid_all_patients.keys():
+                covid_all_patients[country] = [ID]
+            else:    
+                covid_all_patients[country].append(ID)
+# Verify results and randomize order of lists
+seqs = 0
+for country, ids in covid_all_patients.items():
+    seqs += len(ids)
+    # Shuffle
+    random.shuffle(ids)
+    covid_all_patients[country] = ids
+assert seqs == 4596
+# Create list of patients - try to get the same number from each country
+full = False
+i = 0
+Nadded = 0
+while Nadded <= Ncovid:
+    for country, ids in covid_all_patients.items():
+        if not i > len(ids)-1:
+            covid_samples[ids[i]] = country
+            Nadded += 1
+    i += 1
+# Display sample information
+stats = {}
+s = 0
+for ID, country in covid_samples.items():
+    if not country in stats.keys():
+        stats[country] = 1
+    else:    
+        stats[country] += 1
+print(f'Adding {Nadded} sequences to fasta file {s}')
+pp.pprint(stats)
 with open('ml_data/covid19.fasta', 'r') as d:
     with open('covid_subsampled.fasta', 'w') as f:  
         for line in tqdm(d):
@@ -77,9 +78,56 @@ with open('ml_data/covid19.fasta', 'r') as d:
                         covid_writing = covid_writing or False
             elif covid_writing:
                 f.write(line)
+
+
 print('********')
+
 print('MERS')
 # MERS
+with open('ml_data/mers.csv', 'r') as d:
+    for i, line in enumerate(d):
+        if i > 0:
+            sl = line.rstrip().split(',')
+            ID = sl[0]
+            country = sl[4]
+            if ':' in country:
+                country = country.split(':')[0]
+            if '"' in country:
+                country = country.split('"')[1]
+            if country == '':
+                country = 'N/A'
+            if not country in mers_all_patiens.keys():
+                mers_all_patiens[country] = [ID]
+            else:    
+                mers_all_patiens[country].append(ID)
+# Verify results and randomize order of lists
+seqs = 0
+for country, ids in mers_all_patiens.items():
+    seqs += len(ids)
+    # Shuffle
+    random.shuffle(ids)
+    mers_all_patiens[country] = ids
+assert seqs == 318
+# Create list of patients - try to get the same number from each country
+full = False
+i = 0
+Nadded = 0
+while Nadded <= Nmers:
+    for country, ids in mers_all_patiens.items():
+        if not i > len(ids)-1:
+            mers_samples[ids[i]] = country
+            Nadded += 1
+    i += 1
+# Display sample information
+stats = {}
+for ID, country in mers_samples.items():
+    if not country in stats.keys():
+        stats[country] = 1
+    else:    
+        stats[country] += 1
+print(f'Adding {Nadded} sequences to fasta file')
+pp.pprint(stats)
+
 with open('ml_data/mers.fasta', 'r') as d:
     with open('mers_subsampled.fasta', 'w') as f:  
         for line in tqdm(d):
