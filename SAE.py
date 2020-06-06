@@ -92,7 +92,13 @@ class SAE(nn.Module):
         z = self.encoder(emb)
         #z = torch.rand(x.size(0), x.size(1), 6).cuda()
         out = self.decoder(z, tgt_emb)
-        return out 
+        return out
+
+    def forward_encoder(self, x):
+        """Only passes the input through the encoder and returns the result"""
+        emb = self.embedding(x) # get embedding
+        z = self.encoder(emb)
+        return z
 
 class OurDataset(Dataset):
     """Dataset of DNA sequences without labels for unsupervised learning"""
@@ -228,7 +234,19 @@ class Model:
             print("Epoch", e+1, "of", num_epochs, "Loss:", loss) 
 
     def inference(self):
-        pass       
+        self.net.eval()
+        labels = []
+        latents = []
+        for i, data in enumerate(self.train_loader, 0):
+            batch, batch_lengths, names = data
+            # Forward pass through the encoder only to obtain latent vector
+            z = self.net.forward_encoder(batch).detach().cpu().numpy()
+            for j, name in enumerate(names):
+                labels.append(name)
+                latents.append(z[j])
+        df = pd.DataFrame(list(zip(labels, latents)), columns=['Name', 'z'])
+        df.to_pickle("latents.pickle")
+        print(df)
 
 # Use GPU
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -238,4 +256,5 @@ torch.backends.cudnn.benchmark=True
 # Create Model
 model = Model()
 model.load("covid_unaligned_full.csv")
-model.train(num_epochs=100)
+model.train(num_epochs=50)
+model.inference()
