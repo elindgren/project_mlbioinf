@@ -131,3 +131,6 @@ ml_data/*
 *.gz
 *.bionj
 *.mldist
+
+# Python venv
+.env
