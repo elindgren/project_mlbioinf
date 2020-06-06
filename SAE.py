@@ -15,12 +15,18 @@ class Encoder(nn.Module):
         self.fc = nn.Linear(seq_len*hidden_dim, z_dim)
 
     def forward(self, x):
+        #print("in", x.size())
         out = x.permute(1, 0, 2)
+        #print("permute", out.size())
         out = self.transformer(x) 
-        out = out.permute(1, 0, 2)
+        #print("transformer", out.size())
+        #out = out.permute(1, 0, 2)
+        #print("permuted back", out.size())
         out = out.reshape(x.size(0), x.size(1) * x.size(2))
         out = self.fc(out)
         #out = torch.rand(out.size(0), out.size(1)).cuda()
+        #out = torch.mean(out, 1)
+        #print("out", out.size())
         return out
 
 class Decoder(nn.Module):
@@ -28,7 +34,7 @@ class Decoder(nn.Module):
         super().__init__()
         seq_len = 264 #200
         self.fc = nn.Linear(z_dim, seq_len*hidden_dim)
-        decoder_layer = nn.TransformerDecoderLayer(hidden_dim, nhead=8)
+        decoder_layer = nn.TransformerDecoderLayer(hidden_dim, nhead=1)
         self.transformer = nn.TransformerDecoder(decoder_layer, num_layers=1)
         self.out = nn.Linear(hidden_dim, output_dim)
         self.tgt_mask = None
@@ -176,7 +182,7 @@ class Model:
         vocab_size = 51327
         embed_dim = 200
         hidden_dim = 200
-        z_dim = 50
+        z_dim = 30
         # Model
         self.net = SAE(vocab_size=vocab_size, embed_dim=embed_dim, hidden_dim=hidden_dim, z_dim=z_dim, n_layers=1, dropout=0) # set up the NN
         if torch.cuda.is_available():
