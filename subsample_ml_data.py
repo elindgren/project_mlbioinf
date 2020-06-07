@@ -1,6 +1,7 @@
 # Internal imports
 import os
 import random
+import pickle
 import pprint
 
 # External imports
@@ -12,7 +13,7 @@ pp = pprint.PrettyPrinter(indent=4)
 covid_all_patients = {}
 covid_samples = {}
 
-mers_all_patiens = {}
+mers_all_patients = {}
 mers_samples = {}
 
 random.seed(1)
@@ -66,18 +67,23 @@ for ID, country in covid_samples.items():
 print(f'Adding {Nadded} sequences to fasta file {s}')
 pp.pprint(stats)
 with open('ml_data/covid19.fasta', 'r') as d:
-    with open('covid_subsampled.fasta', 'w') as f:  
-        for line in tqdm(d):
-            if '>' in line:
-                covid_writing = False
-                for tag, country in covid_samples.items():
-                    if tag in line:   
-                        covid_writing = True
-                        f.write(line)  
-                    else:
-                        covid_writing = covid_writing or False
-            elif covid_writing:
-                f.write(line)
+    with open('covid_subsampled.fasta', 'w') as f:
+        with open('covid_seqs.txt', 'w') as w:  
+            for line in tqdm(d):
+                if '>' in line:
+                    covid_writing = False
+                    for tag, country in covid_samples.items():
+                        if tag in line:   
+                            covid_writing = True
+                            f.write(line)  
+                            w.write(f'\n{tag}:')
+                        else:
+                            covid_writing = covid_writing or False
+                elif covid_writing:
+                    f.write(line)
+                    w.write(line.rstrip())
+with open('covid_country_label.pckl', 'wb') as f:
+    pickle.dump(covid_samples, f)
 
 
 print('********')
@@ -96,24 +102,24 @@ with open('ml_data/mers.csv', 'r') as d:
                 country = country.split('"')[1]
             if country == '':
                 country = 'N/A'
-            if not country in mers_all_patiens.keys():
-                mers_all_patiens[country] = [ID]
+            if not country in mers_all_patients.keys():
+                mers_all_patients[country] = [ID]
             else:    
-                mers_all_patiens[country].append(ID)
+                mers_all_patients[country].append(ID)
 # Verify results and randomize order of lists
 seqs = 0
-for country, ids in mers_all_patiens.items():
+for country, ids in mers_all_patients.items():
     seqs += len(ids)
     # Shuffle
     random.shuffle(ids)
-    mers_all_patiens[country] = ids
+    mers_all_patients[country] = ids
 assert seqs == 318
 # Create list of patients - try to get the same number from each country
 full = False
 i = 0
 Nadded = 0
 while Nadded <= Nmers:
-    for country, ids in mers_all_patiens.items():
+    for country, ids in mers_all_patients.items():
         if not i > len(ids)-1:
             mers_samples[ids[i]] = country
             Nadded += 1
@@ -141,9 +147,8 @@ with open('ml_data/mers.fasta', 'r') as d:
                         mers_writing = mers_writing or False
             elif mers_writing:
                 f.write(line)
-            
-                
-
+with open('mers_country_label.pckl', 'wb') as f:
+    pickle.dump(mers_samples, f)
                 
                 
 
