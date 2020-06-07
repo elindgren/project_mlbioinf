@@ -125,20 +125,22 @@ df['tsne-2d-two'] = tsne_results[:,1]
 #df = df.groupby('Geo_Location').filter(lambda x : len(x)>5)
 
 # get number of unique categories to choose graph colors
+month = 'April'
+month_df = df.loc[df['Month'] == month]
 num_cats = len(df["Geo_Location"].unique())
-num_conts = len(df["Continent"].unique())
+num_conts = len(month_df["Continent"].unique())
 num_months = len(df["Month"].unique())
 flatui = ["#9b59b6", "#3498db", "#95a5a6", "#e74c3c", "#34495e", "#2ecc71"]
 # plot
-plt.figure(figsize=(20,10))
+plt.figure(figsize=(12,9))
 sns.scatterplot(
     x="tsne-2d-one", y="tsne-2d-two",
     #palette=sns.cubehelix_palette(num_cats),
-    # palette=sns.color_palette("colorblind", num_months),
-    palette = sns.color_palette(flatui, num_months),
-    style="Continent",
-    hue="Month",
-    data=df,
+    palette=sns.color_palette("colorblind", num_conts),
+    #palette = sns.color_palette(flatui, num_months),
+    style="Month",
+    hue="Continent",
+    data=month_df,
     legend="full",
     alpha=0.5,
     linewidth=0.5
@@ -148,12 +150,13 @@ sns.scatterplot(
 ax = plt.gca()
 handles, labels = ax.get_legend_handles_labels()
 ax.legend_ = None
+ax.set_title(f'Covid Cluster - {month} 2020')
 # Shrink current axis by 20%
 box = ax.get_position()
 ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
 # Put a legend to the right of the current axis
 plt.legend(handles, labels, ncol=2, loc="center left", bbox_to_anchor=(1, 0.5))
-plt.savefig('t_sne.png')
+plt.savefig(f'figures/{month}_t_sne.png')
 
 
 # plot based on countries/continents - colors from https://material.io/design/color/the-color-system.html#tools-for-picking-colors
@@ -173,25 +176,85 @@ country_colors = {
     'Africa' : ['#880E4F']
 }
 
+country_map = {
+    "Americas" : {
+        'USA' : '#880E4F',
+        'Puerto Rico' : '#AD1457',
+        'Jamaica' : '#C2185B',
+        'Uruguay' : '#D81B60',
+        'Peru' : '#E91E63',
+        'Brazil' : '#EC407A',
+        'Colombia' : '#F06292',
+    },
+    "Europe" : {
+        'France' : '#1B5E20',
+        'Poland' : '#2E7D32',
+        'Greece' : '#388E3C',
+        'Czech Republic' : '#43A047',
+        'Germany' : '#66BB6A',
+        'Italy' : '#81C784',
+        'Finland' : '#A5D6A7',
+        'Netherlands' : '#C8E6C9',
+        'Serbia' : '#E8F5E9',
+        'Sweden' : '#00C853',
+        'Spain' : '#00E676',
+        'Turkey' : '#69F0AE',
+    },
+    "Asia" : {
+        'India' : '#BF360C',
+        'Japan' : '#D84315',
+        'South Korea' : '#E64A19',
+        'Taiwan' : '#F4511E',
+        'China' : '#FF7043',
+        'Sri Lanka' : '#FF8A65',
+        'Hong Kong' : '#FFAB91',
+        'Thailand' : '#FF6D00',
+        'Viet Nam' : '#FF9100',
+        'Israel' : '#FFAB40',
+        'Malaysia' : '#FFD180',
+        'Pakistan' : '#E65100',
+        'Iran' : '#EF6C00',
+        'Bangladesh' : '#F57C00',
+        'Russia' : '#FB8C00',
+        'Kazakhstan' : '#FF9800',
+        'Nepal' : '#FFB74D'
+    },
+    "Oceania" : {
+        'Australia' : '#1A237E',
+        'Guam' : '#283593'
+    },
+    "Africa" : {
+        'South Africa' : "#880E4F"
+    },
+}
+
 # Run map back and pair each country with a color 
 fig, ax = plt.subplots(figsize=(8,6))
-country_map = {}
 last_continent = ""
-for idx, row in df.iterrows():
+t = 0
+for idx, row in month_df.iterrows(): #! Note - monthdf
     continent = row['Continent']
     country = row['Country']
     if not continent == last_continent:
+        plot_label = True
         i = 0 # Reset index in the subcountry color map
+        last_continent = continent
     else:
+        plot_label = False
         i+=1
     if country == 'Unknown':
         color = "#4E342E" # Brown
     else: 
-        color = country_colors[continent][i]
-    country_map[country] = color
+        color = country_map[continent][country]
     # Plot
-    ax.scatter(row['tsne-2d-one'], row['tsne-2d-two'], alpha=0.5, c=color, label=f'{continent}/{country}')
+    if plot_label:
+        ax.scatter(row['tsne-2d-one'], row['tsne-2d-two'], alpha=0.5, c=color, label=f'{continent}')
+    else:
+        ax.scatter(row['tsne-2d-one'], row['tsne-2d-two'], alpha=0.5, c=color)
+    t += 1
 ax.legend(loc='best')
 ax.set_xlabel('tsne dimension one')
-ax.set_xlabel('tsne dimension two')
-plt.show()
+ax.set_ylabel('tsne dimension two')
+ax.set_title(f'Clustering of Continent/Country - {month} 2020')
+plt.tight_layout()
+plt.savefig(f'figures/{month}_continent_country.png')
