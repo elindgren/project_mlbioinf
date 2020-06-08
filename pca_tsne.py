@@ -116,7 +116,7 @@ sns.scatterplot(
 
 if not os.path.isfile(f't_SNE-{sf}.pickle'):
     time_start = time.time()
-    tsne = TSNE(n_components=2, verbose=1, perplexity=40, n_iter=600)
+    tsne = TSNE(n_components=2, verbose=1, perplexity=20, n_iter=5000)
     tsne_results = tsne.fit_transform(data) # use original data
     #tsne_results = tsne.fit_transform(pca_result) # use pca data
     print('t-SNE done! Time elapsed: {} seconds'.format(time.time()-time_start))
@@ -134,7 +134,7 @@ df['tsne-2d-two'] = tsne_results[:,1]
 #df = df.groupby('Geo_Location').filter(lambda x : len(x)>5)
 
 # get number of unique categories to choose graph colors
-month = 'February'
+month = 'March'
 month_df = df.loc[df['Month'] == month]
 num_cats = len(df["Geo_Location"].unique())
 conts = month_df['Continent'].unique()
@@ -152,9 +152,9 @@ for i, cont in enumerate(conts):
                     data2=tmp_df['tsne-2d-two'],
                     shade=True,
                     shade_lowest=False,
-                    alpha=0.3,
+                    alpha=0.4,
                     color=cm,
-                    n_levels=3
+                    n_levels=5
         )
 sns.scatterplot(
     x="tsne-2d-one", y="tsne-2d-two",
