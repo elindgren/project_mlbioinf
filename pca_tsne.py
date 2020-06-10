@@ -44,6 +44,7 @@ month_map = {
 # load data
 sf = "merged_50"
 df = pd.read_pickle(f'files/{sf}.pickle')
+df = df[:200]
 
 
 # add continents
@@ -59,7 +60,7 @@ for idx, row in df.iterrows():
     continent.append(map[location])
 
 df["Continent"] = continent
-df = df.sort_values(by=["Continent"], ascending=False)
+df = df.sort_values(by=["Continent"], ascending=True)
 
 # add countries
 countries = []
@@ -117,7 +118,7 @@ sns.scatterplot(
 
 if not os.path.isfile(f't_SNE-{sf}.pickle'):
     time_start = time.time()
-    tsne = TSNE(n_components=2, verbose=1, perplexity=20, n_iter=5000)
+    tsne = TSNE(n_components=2, verbose=1, perplexity=15, n_iter=5000)
     tsne_results = tsne.fit_transform(data) # use original data
     #tsne_results = tsne.fit_transform(pca_result) # use pca data
     print('t-SNE done! Time elapsed: {} seconds'.format(time.time()-time_start))
@@ -134,29 +135,90 @@ df['tsne-2d-two'] = tsne_results[:,1]
 # remove countries with less than n data points
 #df = df.groupby('Geo_Location').filter(lambda x : len(x)>5)
 
-# get number of unique categories to choose graph colors
+#* get number of unique categories to choose graph colors
 month = 'March'
 month_df = df.loc[df['Month'] == month]
+
+month_df = df
+
 num_cats = len(df["Geo_Location"].unique())
 conts = month_df['Continent'].unique()
 num_conts = len(month_df["Continent"].unique())
-num_months = len(df["Month"].unique())
+
 color = sns.color_palette("colorblind", num_conts)
-# plot
-plt.figure(figsize=(12,9))
+
+#* Create color map
+color_map = {}
 for i, cont in enumerate(conts):
-    cm = color[i]
-    tmp_df = month_df.loc[month_df['Continent'] == cont]
-    if len(tmp_df['tsne-2d-one'])>2:
-        print(cont)
-        sns.kdeplot(data=tmp_df['tsne-2d-one'], 
-                    data2=tmp_df['tsne-2d-two'],
-                    shade=True,
-                    shade_lowest=False,
-                    alpha=0.4,
-                    color=cm,
-                    n_levels=5
-        )
+    color_map[cont] = color[i]
+continent_styles = {
+    'Americas' : "x", # Cirlce
+    'Europe' : "P",   # Triangle
+    'Asia' :  "s", # Plus
+    'Oceania' : "D", # Cross
+    'Africa' : "o", # Diamond
+    'Unknown' : "^"
+}
+
+#* plot
+fig, ax = plt.subplots(figsize=(15,12))
+grid = np.array(
+    [
+        np.linspace(month_df['tsne-2d-one'].min(), month_df['tsne-2d-one'].max(),20),
+        np.linspace(month_df['tsne-2d-two'].min(), month_df['tsne-2d-two'].max(),20),
+    ]
+)
+print(grid.shape)
+dx = grid[0,1] - grid[0,0]
+dy = grid[1,1] - grid[1,0]
+
+#* Iterate over grid points, and calculate dominant 
+added_labels = []
+# for i in range(grid.shape[1]-1):
+#     for j in range(grid.shape[1]-1):
+#         # Count the number of samples from each continent in each grid
+#         x = grid[0,i]
+#         y = grid[1,j]
+#         sub_df = month_df.loc[
+#             (month_df['tsne-2d-one'] >= x) & (month_df['tsne-2d-one'] <= x+dx) &
+#             (month_df['tsne-2d-two'] >= y) & (month_df['tsne-2d-two'] <= y+dy)
+#             ]
+#         if len(sub_df) > 0:
+#             unique, counts = np.unique(sub_df['Continent'], return_counts=True)
+#             dcont = ''
+#             size = counts[0]
+
+#             if size > 10:
+#                 # Plot dominant continent as blob if there are more than 20 of them in the block
+#                 dcont = unique[0]
+#                 ax.scatter(
+#                     x=x+dx/2, 
+#                     y=y+dy/2, 
+#                     color=color_map[dcont],
+#                     alpha=0.4,
+#                     marker="o",
+#                     s=size*20
+#                 )
+#             # Scatter other points
+#             for idx, c_df in sub_df.loc[sub_df['Continent'] != dcont].iterrows():
+#                 c = c_df['Continent']
+#                 if not c in added_labels:
+#                     l = c
+#                     added_labels.append(c)
+#                 else: 
+#                     l = ''
+#                 ax.scatter(
+#                     x=c_df['tsne-2d-one'],
+#                     y=c_df['tsne-2d-two'],
+#                     color=color_map[c],
+#                     alpha=0.8,
+#                     marker=continent_styles[c],
+#                     edgecolor='w',
+#                     s=60,
+#                     label=l
+#                 )
+
+
 sns.scatterplot(
     x="tsne-2d-one", y="tsne-2d-two",
     #palette=sns.cubehelix_palette(num_cats),
@@ -175,18 +237,18 @@ sns.scatterplot(
 
 
 # Remove old legend
-ax = plt.gca()
+# ax = plt.gca()
 ax.grid()
 handles, labels = ax.get_legend_handles_labels()
 ax.legend_ = None
-ax.set_title(f'Covid Cluster - {month} 2020')
+ax.set_title(f'Covid Cluster - Subsampled (200 seqs.) dataset 2020')
 # Shrink current axis by 20%
 box = ax.get_position()
 ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
 # Put a legend to the right of the current axis
-plt.legend(handles, labels, ncol=2, loc="center left", bbox_to_anchor=(0.8, 0.95))
+plt.legend(handles, labels, ncol=2, loc="center left", bbox_to_anchor=(0.8, 0.90))
 # plt.tight_layout()
-plt.savefig(f'figures/{month}_t_sne.png')
+plt.savefig(f'figures/200_t_sne.png')
 
 
 # plot based on countries/continents - colors from https://material.io/design/color/the-color-system.html#tools-for-picking-colors
@@ -259,34 +321,34 @@ country_map = {
 }
 
 # Run map back and pair each country with a color 
-fig, ax = plt.subplots(figsize=(8,6))
-last_continent = ""
-t = 0
-for idx, row in month_df.iterrows(): #! Note - monthdf
-    continent = row['Continent']
-    country = row['Country']
-    if not continent == last_continent:
-        plot_label = True
-        i = 0 # Reset index in the subcountry color map
-        last_continent = continent
-    else:
-        plot_label = False
-        i+=1
-    if country == 'Unknown':
-        color = "#4E342E" # Brown
-        style = '*'
-    else: 
-        color = country_map[continent][country]
-        style = continent_styles[continent]
-    # Plot
-    if plot_label:
-        ax.scatter(row['tsne-2d-one'], row['tsne-2d-two'], alpha=1, c=color, marker=style , label=f'{continent}')
-    else:
-        ax.scatter(row['tsne-2d-one'], row['tsne-2d-two'], marker=style, alpha=1, c=color)
-    t += 1
-ax.legend(loc='best')
-ax.set_xlabel('tsne dimension one')
-ax.set_ylabel('tsne dimension two')
-ax.set_title(f'Clustering of Continent/Country - {month} 2020')
-plt.tight_layout()
-plt.savefig(f'figures/{month}_continent_country.pdf')
+# fig, ax = plt.subplots(figsize=(8,6))
+# last_continent = ""
+# t = 0
+# for idx, row in month_df.iterrows(): #! Note - monthdf
+#     continent = row['Continent']
+#     country = row['Country']
+#     if not continent == last_continent:
+#         plot_label = True
+#         i = 0 # Reset index in the subcountry color map
+#         last_continent = continent
+#     else:
+#         plot_label = False
+#         i+=1
+#     if country == 'Unknown':
+#         color = "#4E342E" # Brown
+#         style = '*'
+#     else: 
+#         color = country_map[continent][country]
+#         style = continent_styles[continent]
+#     # Plot
+#     if plot_label:
+#         ax.scatter(row['tsne-2d-one'], row['tsne-2d-two'], alpha=1, c=color, marker=style , label=f'{continent}')
+#     else:
+#         ax.scatter(row['tsne-2d-one'], row['tsne-2d-two'], marker=style, alpha=1, c=color)
+#     t += 1
+# ax.legend(loc='best')
+# ax.set_xlabel('tsne dimension one')
+# ax.set_ylabel('tsne dimension two')
+# ax.set_title(f'Clustering of Continent/Country - {month} 2020')
+# plt.tight_layout()
+# plt.savefig(f'figures/{month}_continent_country.pdf')
