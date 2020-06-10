@@ -105,6 +105,7 @@ num_cats = len(df["Geo_Location"].unique())
 # make plot
 plt.figure(figsize=(16,10))
 sns.scatterplot(
+    # TODO Generate with multiple perplexity values and compare - https://distill.pub/2016/misread-tsne/
     x="pca-one", y="pca-two",
     palette=sns.color_palette("colorblind", num_cats),
     style="Continent",
