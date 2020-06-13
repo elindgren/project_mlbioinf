@@ -12,10 +12,10 @@ from sklearn.manifold import TSNE
 # Set plot params
 plt.rc('font', size=18)          # controls default text sizes
 plt.rc('axes', titlesize=22)     # fontsize of the axes title
-plt.rc('axes', labelsize=18)     # fontsize of the x and y labels
-plt.rc('xtick', labelsize=16)    # fontsize of the tick labels
-plt.rc('ytick', labelsize=16)    # fontsize of the tick labels
-plt.rc('legend', fontsize=16)    # legend fontsize
+plt.rc('axes', labelsize=22)     # fontsize of the x and y labels
+plt.rc('xtick', labelsize=20)    # fontsize of the tick labels
+plt.rc('ytick', labelsize=20)    # fontsize of the tick labels
+plt.rc('legend', fontsize=18)    # legend fontsize
 
 map = {'USA': 'Americas', 'Australia': 'Oceania', 'France': 'Europe', 'Poland': 'Europe', 'India': 'Asia', 'Greece': 'Europe', 'Japan': 'Asia',
         'Czech Republic': 'Europe', 'South Korea': 'Asia', 'Taiwan': 'Asia', 'Puerto Rico': 'Americas', 'China': 'Asia',
@@ -44,7 +44,7 @@ month_map = {
 # load data
 sf = "merged_50"
 df = pd.read_pickle(f'files/{sf}.pickle')
-df = df[:200]
+# df = df[:200]
 
 
 # add continents
@@ -116,9 +116,10 @@ sns.scatterplot(
     alpha=0.7
 )
 
+perp = 50
 if not os.path.isfile(f't_SNE-{sf}.pickle'):
     time_start = time.time()
-    tsne = TSNE(n_components=2, verbose=1, perplexity=15, n_iter=5000)
+    tsne = TSNE(n_components=2, verbose=1, perplexity=perp, n_iter=5000)
     tsne_results = tsne.fit_transform(data) # use original data
     #tsne_results = tsne.fit_transform(pca_result) # use pca data
     print('t-SNE done! Time elapsed: {} seconds'.format(time.time()-time_start))
@@ -241,14 +242,14 @@ sns.scatterplot(
 ax.grid()
 handles, labels = ax.get_legend_handles_labels()
 ax.legend_ = None
-ax.set_title(f'Covid Cluster - Subsampled (200 seqs.) dataset 2020')
+ax.set_title(f'Covid Cluster - Full dataset 2020, perplexity={perp}')
 # Shrink current axis by 20%
 box = ax.get_position()
 ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
 # Put a legend to the right of the current axis
-plt.legend(handles, labels, ncol=2, loc="center left", bbox_to_anchor=(0.8, 0.90))
+plt.legend(handles, labels, ncol=2, loc="center left", bbox_to_anchor=(0.8, 0.9))
 # plt.tight_layout()
-plt.savefig(f'figures/200_t_sne.png')
+plt.savefig(f'figures/t_sne_perplexity{perp}.png')
 
 
 # plot based on countries/continents - colors from https://material.io/design/color/the-color-system.html#tools-for-picking-colors
