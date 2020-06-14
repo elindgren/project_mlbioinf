@@ -44,8 +44,6 @@ month_map = {
 # load data
 sf = "merged_50"
 df = pd.read_pickle(f'files/{sf}.pickle')
-# df = df[:200]
-
 
 # add continents
 continent = []
@@ -116,7 +114,7 @@ sns.scatterplot(
     alpha=0.7
 )
 
-perp = 50
+perp = 20
 if not os.path.isfile(f't_SNE-{sf}.pickle'):
     time_start = time.time()
     tsne = TSNE(n_components=2, verbose=1, perplexity=perp, n_iter=5000)
@@ -135,6 +133,18 @@ df['tsne-2d-two'] = tsne_results[:,1]
 
 # remove countries with less than n data points
 #df = df.groupby('Geo_Location').filter(lambda x : len(x)>5)
+
+#* pick out accession numbers of interest
+accesions = [
+    'MT270104', 'MT270105', 'MT259229', 'MT259231', 'MT253700',
+    'MT253699', 'MT449674', 'MT121215', 'MT407658', 'MT079844', 
+    'MT079852', 'MN938384', 'MT528622', 'MT252799', 'MT326050', 
+    'MT326108', 'MT292579', 'MT198651', 'MT292577', 'MT233521', 
+    'MT292574', 'MT233523', 'MT256917', 'MT281577', 'MT077125',
+    'MT292572', 'MT066156', 'MT019531', 'MT358641', 'MT358638', 
+    'MT291828'
+]
+# df = df[df['Accession'].isin(accesions)]
 
 #* get number of unique categories to choose graph colors
 month = 'March'
@@ -173,67 +183,80 @@ print(grid.shape)
 dx = grid[0,1] - grid[0,0]
 dy = grid[1,1] - grid[1,0]
 
+np.random.seed(1)
 #* Iterate over grid points, and calculate dominant 
 added_labels = []
-# for i in range(grid.shape[1]-1):
-#     for j in range(grid.shape[1]-1):
-#         # Count the number of samples from each continent in each grid
-#         x = grid[0,i]
-#         y = grid[1,j]
-#         sub_df = month_df.loc[
-#             (month_df['tsne-2d-one'] >= x) & (month_df['tsne-2d-one'] <= x+dx) &
-#             (month_df['tsne-2d-two'] >= y) & (month_df['tsne-2d-two'] <= y+dy)
-#             ]
-#         if len(sub_df) > 0:
-#             unique, counts = np.unique(sub_df['Continent'], return_counts=True)
-#             dcont = ''
-#             size = counts[0]
+for i in range(grid.shape[1]-1):
+    for j in range(grid.shape[1]-1):
+        # Count the number of samples from each continent in each grid
+        x = grid[0,i]
+        y = grid[1,j]
+        sub_df = month_df.loc[
+            (month_df['tsne-2d-one'] >= x) & (month_df['tsne-2d-one'] <= x+dx) &
+            (month_df['tsne-2d-two'] >= y) & (month_df['tsne-2d-two'] <= y+dy)
+            ]
+        if len(sub_df) > 0:
+            unique, counts = np.unique(sub_df['Continent'], return_counts=True)
+            dcont = ''
+            size = counts[0]
 
-#             if size > 10:
-#                 # Plot dominant continent as blob if there are more than 20 of them in the block
-#                 dcont = unique[0]
-#                 ax.scatter(
-#                     x=x+dx/2, 
-#                     y=y+dy/2, 
-#                     color=color_map[dcont],
-#                     alpha=0.4,
-#                     marker="o",
-#                     s=size*20
-#                 )
-#             # Scatter other points
-#             for idx, c_df in sub_df.loc[sub_df['Continent'] != dcont].iterrows():
-#                 c = c_df['Continent']
-#                 if not c in added_labels:
-#                     l = c
-#                     added_labels.append(c)
-#                 else: 
-#                     l = ''
-#                 ax.scatter(
-#                     x=c_df['tsne-2d-one'],
-#                     y=c_df['tsne-2d-two'],
-#                     color=color_map[c],
-#                     alpha=0.8,
-#                     marker=continent_styles[c],
-#                     edgecolor='w',
-#                     s=60,
-#                     label=l
-#                 )
+            if size > 20000:
+                # Plot dominant continent as blob if there are more than 20 of them in the block
+                dcont = unique[0]
+                ax.scatter(
+                    x=x+dx/2, 
+                    y=y+dy/2, 
+                    color=color_map[dcont],
+                    alpha=0.4,
+                    marker="o",
+                    s=size*20
+                )
+            # Scatter other points
+            for idx, c_df in sub_df.loc[sub_df['Continent'] != dcont].iterrows():
+                c = c_df['Continent']
+                if not c in added_labels:
+                    l = c
+                    added_labels.append(c)
+                else: 
+                    l = ''
+                ax.scatter(
+                    x=c_df['tsne-2d-one'],
+                    y=c_df['tsne-2d-two'],
+                    color=color_map[c],
+                    alpha=0.8,
+                    marker=continent_styles[c],
+                    edgecolor='w',
+                    s=50,
+                    label=l
+                )
+                
+                # mx = np.random.uniform(1,5)
+                # my = np.random.uniform(1,5)
+                # mx = 1
+                # my = 1
+                # ax.text(
+                #     x=c_df['tsne-2d-one']+mx,
+                #     y=c_df['tsne-2d-two']+my,
+                #     s=c_df['Accession'],
+                #     fontsize=14,
+                #     color='gray'
+                # )
 
 
-sns.scatterplot(
-    x="tsne-2d-one", y="tsne-2d-two",
-    #palette=sns.cubehelix_palette(num_cats),
-    palette=sns.color_palette("colorblind", num_conts),
-    #palette = sns.color_palette(flatui, num_months),
-    style="Continent",
-    hue="Continent",
-    hue_order=conts,
-    data=month_df,
-    legend="full",
-    alpha=0.8,
-    linewidth=0.5,
-    s=60
-)
+# sns.scatterplot(
+#     x="tsne-2d-one", y="tsne-2d-two",
+#     #palette=sns.cubehelix_palette(num_cats),
+#     palette=sns.color_palette("colorblind", num_conts),
+#     #palette = sns.color_palette(flatui, num_months),
+#     style="Continent",
+#     hue="Continent",
+#     hue_order=conts,
+#     data=month_df,
+#     legend="full",
+#     alpha=0.8,
+#     linewidth=0.5,
+#     s=60
+# )
 
 
 
@@ -242,7 +265,9 @@ sns.scatterplot(
 ax.grid()
 handles, labels = ax.get_legend_handles_labels()
 ax.legend_ = None
-ax.set_title(f'Covid Cluster - Full dataset 2020, perplexity={perp}')
+# ax.set_title(f'Covid Cluster - Full dataset 2020, perplexity={perp}')
+ax.set_xlabel('t-SNE dimension one')
+ax.set_ylabel('t-SNE dimension two')
 # Shrink current axis by 20%
 box = ax.get_position()
 ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
